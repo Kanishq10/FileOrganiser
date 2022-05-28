@@ -1,5 +1,5 @@
-let fs=require("fs")
-let path=require("path")
+const fs=require("fs")
+const path=require("path")
 
 let types={
     Document:["txt"],
@@ -7,11 +7,12 @@ let types={
     Audio:['mp3'],
     Video:['mp4','mkv'],
     Application:['exe','apk'],
-    PDf_Document:['pdf']
+    PDf_Document:['pdf'],
+    Archives:['rar','zip']
 };
 
 //getting input from console
-let input=process.argv.slice(2);  // it take input as array from terminal
+let input=process.argv.slice(2);  // The process.argv property returns an array containing the command-line arguments passed when the Node.js process was launched.
 // console.log(input);
 
 //node main.js help
@@ -23,12 +24,13 @@ switch (command) {
         organisefn(input[1]);
         break;
     case "tree":
+        treefn(input[1]);
         break;
     case "help":
         helpfn();
         break;
     default:
-        console.log("Plese provide us the command")
+        console.log("Plese provide us the command🤷")
         break;
 }
 
@@ -41,17 +43,16 @@ function helpfn(){// for string fomatting we use ``
 }
 
 function organisefn(pathname){
-    let dest;
     if(pathname=="current"){
         pathname=__dirname;
         console.log(pathname);
     }
-    if(pathname==undefined || fs.existsSync(pathname)==false){
-        console.log("Please provide a path");
-        return;
-    }
     else{
         //making folders to organise data 
+        let dest;
+        if(pathname==undefined){
+            pathname=process.cwd();
+        }
         dest=path.join(pathname,"organised_Folder");
         if(fs.existsSync(dest)==false){
             fs.mkdirSync(dest);
@@ -80,7 +81,7 @@ function organiserhelper(src,dest){
     console.log(childFiles);
     for(let i=0;i<childFiles.length;i++){
         let childAddress=path.join(src,childFiles[i]);
-        if(fs.lstatSync(childFiles[i]).isFile()){
+        if(fs.lstatSync(childAddress).isFile()){                               //bug fixed😁😁
             let category=childCategory(childFiles[i]);    
             // console.log(category);
             sendFiles(dest,childAddress,category);
@@ -110,8 +111,40 @@ function sendFiles(dest,srcpath,category){
         fs.mkdirSync(destination);
     }
     let filename=path.basename(srcpath);
-    let destfile=path.join(dest,filename)
+    let destfile=path.join(destination,filename)
     fs.copyFileSync(srcpath,destfile);
     console.log(filename," copying to ",destination);
-    // fs.unlinkSync(srcpath);     //use carefully
+    // fs.unlinkSync(srcpath);     //use carefully as it will delete the files from source folder
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------
+function treefn(pathname){
+    if(pathname=="current"){
+        pathname=__dirname;
+        console.log(pathname);
+    }
+    if(pathname==undefined || fs.existsSync(pathname)==false){
+        // console.log("Please provide a path");
+        treefnhelper("",process.cwd());                           //return the current working directory of node.js
+        return;
+    }
+    else{
+        treefnhelper("",pathname);
+    }
+}
+
+function treefnhelper(indentation,dirpath){
+    if(fs.lstatSync(dirpath).isFile()){
+        let fname=path.basename(dirpath);
+        console.log(indentation+"├───",fname);
+    }
+    else{
+        let dname=path.basename(dirpath);
+        console.log(indentation+"└───",dname);
+        let childs=fs.readdirSync(dirpath);
+        for(let i=0;i<childs.length;i++){
+            let childpath=path.join(dirpath,childs[i]);
+            treefnhelper(indentation+"\t",childpath);
+        }
+    }
 }
